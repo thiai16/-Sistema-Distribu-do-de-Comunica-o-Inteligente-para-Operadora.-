@@ -1,0 +1,1 @@
+# -Sistema-Distribu-do-de-Comunica-o-Inteligente-para-Operadora.-
