@@ -4,7 +4,7 @@
 [cite_start]Projeto de implementação de um sistema distribuído para gerenciamento de comunicação em larga escala (e-mail e chat) para operadoras, utilizando conceitos de paralelismo e arquitetura de microserviços
 
 **Autores:**
-* [cite_start]João Victor Fernandes Rocha 
+* João Victor Fernandes Rocha 
 * [cite_start]Thiago Aquino Guedes Barbosa 
 
 **Orientador:**
