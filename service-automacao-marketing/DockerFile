@@ -1,0 +1,21 @@
+# Use uma imagem Python leve e moderna
+FROM python:3.10-slim
+
+# Defina o diretório de trabalho dentro do contêiner
+WORKDIR /app
+
+# Copie o arquivo de dependências
+COPY requirements.txt .
+
+# Instale as dependências
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie o código da aplicação (assumindo que seu código está em uma pasta 'app')
+COPY ./app /app/app
+
+# Exponha a porta que o uvicorn irá rodar
+EXPOSE 8000
+
+# Comando para iniciar o servidor FastAPI com uvicorn
+# app.main:app -> "arquivo" main.py, "variável" app
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
