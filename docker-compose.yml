@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+
+  # INFRAESTRUTURA (Message Broker e Database)
+  rabbitmq:
+    image: "rabbitmq:3.13-management"
+    ports:
+      - "5672:5672"   # Porta de comunicação (AMQP)
+      - "15672:15672" # Painel de Gestão do RabbitMQ
+    networks:
+      - minha_rede
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    networks:
+      - minha_rede
+
+  
+  # GERENCIADOR E DASHBOARD
+  # Responsável por: Central de Controle, Disparo de Campanhas
+  # Porta: 8000
+  api_emails: 
+    build: .  # Usa o Dockerfile da raiz (pasta app)
+    container_name: dashboard_manager
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - minha_rede
+
+  # Worker genérico para envio de e-mails em massa
+  # Escala horizontalmente (pode ter várias réplicas)
+  worker_emails:
+    build: .
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - minha_rede
+
+  
+  # BOT DE ATENDIMENTO
+  # Responsável por: Chat com cliente e Triagem
+  # Porta: 8001
+  bot_atendimento:
+    build: ./bot
+    container_name: bot_atendimento
+    ports:
+      - "8001:8001"
+    # O bot precisa falar com o RabbitMQ para avisar o Marketing
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+    command: uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    networks:
+      - minha_rede
+
+  
+  # MARKETING INTELIGENTE
+  # Responsável por: Win-back (Recuperação de clientes)
+  # Tipo: Worker (Processamento em Background)
+  marketing_service:
+    build: 
+      context: ./marketing
+    container_name: worker_marketing
+    # -A main.celery_app: Aponta para a variável celery_app no arquivo main.py
+    # -Q marketing_queue: Obriga este worker a escutar SÓ a fila do marketing
+    command: celery -A main.celery_app worker --loglevel=info -Q marketing_queue
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - minha_rede
+
+  
+  # MONITORAMENTO EXTRA
+  flower:
+    image: mher/flower
+    container_name: monitor_flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
+    depends_on:
+      - rabbitmq
+    networks:
+      - minha_rede
+
+networks:
+  minha_rede:
+    driver: bridge
