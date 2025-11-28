@@ -1,5 +1,0 @@
-fastapi
-uvicorn        # O servidor que roda o FastAPI
-celery         # O framework das nossas tarefas (Consumidor)
-redis          # Usado pelo Celery para se conectar ao RabbitMQ (sim, o nome é confuso)
-flower         # O painel de monitoramento (Bônus)
