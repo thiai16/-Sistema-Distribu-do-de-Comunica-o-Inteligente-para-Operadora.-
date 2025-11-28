@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-motor
-celery
-aiofiles
-requests
